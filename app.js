@@ -45,13 +45,23 @@ function create() {
     player1 = new Player(this, 'LEFT');
     player2 = new Player(this, 'RIGHT');
 
+    // On instancie une nouvelle balle
     ball = new Ball(this);
 
-    // On définit les touches pour déplacer les paddle
+    // On définit les touches pour déplacer les paddles
     keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
     keyQ = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
-    keyUp = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
-    keyDown = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
+    keyUp = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+    keyDown = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
+
+    // On ajoute la collision de la balle avec les paddles
+    this.physics.add.collider(ball.ball, player1.paddle, () => {
+        console.log('hello');
+    });
+
+    this.physics.add.collider(ball.ball, player2.paddle, () => {
+        console.log('hello2');
+    });
 }
 
 
@@ -75,15 +85,30 @@ function update() {
         // On fait descendre le paddle
         player2.toBottom();
     }
+
+    // Si la balle touche le côté droit
+    if (ball.ball.body.blocked.right) {
+        // On ajoute un point au joueur 1 
+        player1.win();
+        // On remet la balle au milieu
+        ball.init();
+        // Sinon si la balle touche le côté gauche
+    } else if (ball.ball.body.blocked.left) {
+        // On ajoute un point au joueur 2 
+        player2.win();
+        // On remet la balle au milieu
+        ball.init();
+    }
 }
 
 class Player {
     // On initialise notre objet paddle
     constructor(self, side) {
         this.paddle = this.createPaddle(self, side);
+        this.points = 0;
     }
 
-    // Méthode définissant la position x du paddle droit ou gauche
+    // Méthode définissant la position x du paddle ()droit ou gauche)
     createPaddle(self, side) {
         let x;
         let y = game.canvas.height / 2
@@ -99,7 +124,12 @@ class Player {
         }
 
         let paddle = self.physics.add.image(x, y, 'paddle');
+
+        // On empeche les paddle de sortir du jeu
         paddle.body.collideWorldBounds = true;
+
+        // Le padlle ne peut plus etre déplacé par la balle
+        paddle.body.immovable = true;
 
         return paddle;
     }
@@ -112,6 +142,10 @@ class Player {
     // Methode gerant la descente du paddle
     toBottom() {
         this.paddle.setVelocity(0, PADDLE.speed);
+    }
+
+    win() {
+        this.points++;
     }
 
 }
@@ -136,7 +170,12 @@ class Ball {
         return ball;
     }
 
+    // Methode qui initialise le déplacement de la balle
     init() {
+        let x = game.canvas.width / 2;
+        let y = game.canvas.height / 2;
+        this.ball.setX(x);
+        this.ball.setY(y);
         this.ball.setVelocity(BALL.speed, BALL.speed);
     }
 }
