@@ -1,8 +1,8 @@
 // Config du jeu
 const config = {
     type: Phaser.AUTO,
-    width: 600,
-    height: 300,
+    width: window.innerWidth,
+    height: window.innerHeight,
     parent: 'phaser',
     physics: {
         default: 'arcade',
@@ -10,7 +10,7 @@ const config = {
             gravity: { y: 0 }
         }
     },
-    backgroundColor: '#000000',
+    backgroundColor: '#2A363B',
     scene: {
         preload: preload,
         create: create,
@@ -22,13 +22,13 @@ const config = {
     VARIABLES
   ------------- */
 
-const PADDLE = { width: 14, height: 100, speed: 200 };
-const BALL = { speed: 200 };
+const PADDLE = { width: 14, height: 400, speed: 400 };
+const BALL = { speed: 400 };
 let player1, player2, ball;
 let keyA, keyQ, keyUp, keyDown;
 
 
-// Fonction de préchargement du jeu
+// Fonction de préchargement du jeu 
 function preload() {
     // On charge l'image du paddle
     this.load.image('paddle', 'img/paddle.png')
@@ -56,11 +56,11 @@ function create() {
 
     // On ajoute la collision de la balle avec les paddles
     this.physics.add.collider(ball.ball, player1.paddle, () => {
-        console.log('hello');
+        ball.accelerate();
     });
 
     this.physics.add.collider(ball.ball, player2.paddle, () => {
-        console.log('hello2');
+        ball.accelerate();
     });
 }
 
@@ -99,13 +99,19 @@ function update() {
         // On remet la balle au milieu
         ball.init();
     }
+
+    if (player1.points > 5) {
+        initGame();
+    }
 }
+
 
 class Player {
     // On initialise notre objet paddle
     constructor(self, side) {
         this.paddle = this.createPaddle(self, side);
         this.points = 0;
+        this.text = this.createText(self, side);
     }
 
     // Méthode définissant la position x du paddle ()droit ou gauche)
@@ -134,25 +140,59 @@ class Player {
         return paddle;
     }
 
-    // Methode gerant la montée du paddle
+    // Methode gerant la montée des paddles
     toTop() {
         this.paddle.setVelocity(0, -PADDLE.speed);
     }
 
-    // Methode gerant la descente du paddle
+    // Methode gerant la descente des paddles
     toBottom() {
         this.paddle.setVelocity(0, PADDLE.speed);
     }
 
+    // Mise a jour du score et du texte
     win() {
         this.points++;
+        this.updateScore();
     }
 
+    // Ajout du texte pour les points
+    createText(self, side) {
+        let textConfig = {
+            x: game.canvas.width / 4,
+            y: game.canvas.height / 2,
+            text: this.points,
+            style: {
+                fontSize: '65px',
+                color: '#FFFFFF30',
+                fontFamily: 'Arial'
+            }
+        }
+
+        if (side == 'RIGHT') {
+            textConfig.x = game.canvas.width / 4 * 3;
+        }
+
+        let text = self.make.text(textConfig);
+        return text;
+    }
+
+    updateScore() {
+        this.text.setText(this.points);
+    }
+
+    init() {
+        this.points = 0
+        this.updateScore();
+        let y = game.canvas.height / 2;
+        this.paddle.setY(y);
+    }
 }
 
 
+
 class Ball {
-    // On initialise notre objet ball
+    // On construit notre objet ball
     constructor(self) {
         this.ball = this.createBall(self);
         this.init();
@@ -170,14 +210,65 @@ class Ball {
         return ball;
     }
 
+
     // Methode qui initialise le déplacement de la balle
     init() {
         let x = game.canvas.width / 2;
         let y = game.canvas.height / 2;
         this.ball.setX(x);
         this.ball.setY(y);
-        this.ball.setVelocity(BALL.speed, BALL.speed);
+
+        // On calcule la vitesse de la balle au carré
+        let ball_speed_square = Math.pow(BALL.speed, 2);
+
+        // On lui génére une vitesse aléatoire
+        let velocity_x = random(ball_speed_square / 3, ball_speed_square);
+        let velocity_y = ball_speed_square - velocity_x;
+
+        // On divise la vitesse afin que ça ne soit pas trop rapide
+        velocity_x = Math.sqrt(velocity_x);
+        velocity_y = Math.sqrt(velocity_y);
+
+        // Génération d'une trajectoire aléatoire pour la balle
+        let rand_bool_x = Math.random() >= 0.5;
+        let rand_bool_y = Math.random() >= 0.5;
+
+        if (rand_bool_x) {
+            velocity_x = - velocity_x;
+        }
+
+        if (rand_bool_y) {
+            velocity_y = - velocity_y;
+        }
+
+        this.ball.setVelocity(velocity_x, velocity_y);
     }
+
+    // Fonction permettant d'accélérer la balle a chaque collision avec les paddles
+    accelerate() {
+        // On récupère sa vitesse 
+        let velocity = this.ball.body.velocity;
+        // On définit l'accélération
+        let acceleration = Math.floor(BALL.speed / 7);
+
+        // Si l'accélération n'est pas négative on l'additionne sinon son contraire
+        velocity.x += (velocity > 0) ? velocity : - acceleration;
+        velocity.y += (velocity > 0) ? velocity : - acceleration;
+
+        // On set la nouvelle vitesse
+        this.ball.setVelocity(velocity.x, velocity.y);
+    }
+}
+
+// Méthode pour la vitesse aléatoire
+function random(min, max) {
+    return Math.floor(Math.random() * (max - min) + min);
+}
+
+function initGame() {
+    ball.init();
+    player1.init();
+    player2.init();
 }
 
 
