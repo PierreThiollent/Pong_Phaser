@@ -1,2 +1,2 @@
 # Pong_Phaser
-Jeu pong avec Phaser 3
+Jeu du pong développé avec Phaser 3 afin de découvrir le framework 🎮
